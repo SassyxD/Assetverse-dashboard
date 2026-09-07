@@ -22,11 +22,16 @@ export const measurement = <T extends z.ZodTypeAny>(value: T) =>
     note: z.string().optional(),
   });
 
+/**
+ * ต้องเขียน `| undefined` ให้ชัด — ใต้ exactOptionalPropertyTypes คำว่า `sampleSize?: number`
+ * หมายถึง "มีแล้วเป็น number หรือไม่มีเลย" ซึ่ง type ที่ zod infer
+ * (`sampleSize?: number | undefined`) assign เข้ามาไม่ได้
+ */
 export type Measurement<T> = {
   state: MeasurementState;
   value: T | null;
-  sampleSize?: number;
-  note?: string;
+  sampleSize?: number | undefined;
+  note?: string | undefined;
 };
 
 export const ok = <T>(value: T, sampleSize?: number): Measurement<T> =>
