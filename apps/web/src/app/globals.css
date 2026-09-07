@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/* Tailwind 4 — config อยู่ใน CSS ไม่ใช่ tailwind.config.js
+   สีทั้งชุดสื่อ "สถานะ" ไม่ใช่ตกแต่ง — wait ต้องไม่ใช่แดง เพราะเป็นสถานะปกติ */
+@theme {
+  --color-ink: #1b1f24;
+  --color-dim: #6b7280;
+  --color-faint: #9ca3af;
+  --color-line: #e2e5ea;
+  --color-line-soft: #eef0f3;
+
+  --color-ok: #0f8a5f;
+  --color-ok-bg: #e8f6ef;
+  --color-wait: #8a6100;
+  --color-wait-bg: #fdf3dd;
+  --color-gap: #c2410c;
+  --color-gap-bg: #fff1e8;
+  --color-bad: #b3261e;
+  --color-bad-bg: #fdecea;
+  --color-dead: #2b3440;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Thai', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root { color-scheme: light; }
+
+body {
+  background: #f6f7f9;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ช่องที่ยังไม่มีข้อมูล — ต้องเด่นกว่าช่องที่มีเลขเยอะ (กลับด้านจาก dashboard ปกติ) */
+.gap-hatch {
+  background: repeating-linear-gradient(
+    135deg, var(--color-gap-bg), var(--color-gap-bg) 5px, #ffe3d2 5px, #ffe3d2 10px
+  );
+}

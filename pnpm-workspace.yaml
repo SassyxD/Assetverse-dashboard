@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - services/*
+  - packages/*
+
+# pnpm 10+ ไม่รัน postinstall ของ dependency เว้นแต่ระบุไว้ที่นี่
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'
+  - esbuild
+  - sharp

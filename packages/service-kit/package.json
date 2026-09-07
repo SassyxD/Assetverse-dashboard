@@ -1,0 +1,21 @@
+{
+  "name": "@assetverse/service-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@assetverse/contracts": "workspace:*",
+    "@hono/node-server": "2.1.1",
+    "hono": "4.13.7"
+  },
+  "devDependencies": { "typescript": "7.0.2" }
+}
