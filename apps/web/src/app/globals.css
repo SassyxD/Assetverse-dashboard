@@ -1,43 +1,166 @@
 @import 'tailwindcss';
 
-/* Tailwind 4 — config อยู่ใน CSS ไม่ใช่ tailwind.config.js
-   สีทั้งชุดสื่อ "สถานะ" ไม่ใช่ตกแต่ง — wait ต้องไม่ใช่แดง เพราะเป็นสถานะปกติ */
-@theme {
-  --color-ink: #1b1f24;
-  --color-dim: #6b7280;
-  --color-faint: #9ca3af;
-  --color-line: #e2e5ea;
-  --color-line-soft: #eef0f3;
+@custom-variant dark (&:is(.dark *));
 
-  --color-ok: #0f8a5f;
-  --color-ok-bg: #e8f6ef;
-  --color-wait: #8a6100;
-  --color-wait-bg: #fdf3dd;
-  --color-gap: #c2410c;
-  --color-gap-bg: #fff1e8;
-  --color-bad: #b3261e;
-  --color-bad-bg: #fdecea;
-  --color-dead: #2b3440;
+/* ---------------------------------------------------------------------------
+   Design system — shadcn token set (Tailwind 4: config อยู่ใน CSS)
+   นอกจาก token มาตรฐาน มี token สถานะเพิ่ม 4 ตัวที่ผูกกับ "ใครต้องทำอะไร"
+   ไม่ได้ผูกกับความรุนแรงของตัวเลข · wait ห้ามเป็นแดง เพราะไม่ต้องทำอะไร
+--------------------------------------------------------------------------- */
+:root {
+  --radius: 0.5rem;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Thai', sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --background: oklch(0.985 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+
+  --ok: oklch(0.58 0.12 152);
+  --ok-soft: oklch(0.95 0.03 152);
+  --wait: oklch(0.62 0.11 78);
+  --wait-soft: oklch(0.96 0.04 88);
+  --gap: oklch(0.6 0.15 45);
+  --gap-soft: oklch(0.96 0.04 55);
+  --bad: oklch(0.55 0.2 27);
+  --bad-soft: oklch(0.95 0.03 27);
+
+  --chart-1: oklch(0.205 0 0);
+  --chart-2: oklch(0.45 0 0);
+  --chart-3: oklch(0.6 0.15 45);
+  --chart-4: oklch(0.58 0.12 152);
+  --chart-5: oklch(0.62 0.11 78);
 }
 
-:root { color-scheme: light; }
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
 
-body {
-  background: #f6f7f9;
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: 13px;
-  line-height: 1.55;
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+
+  --ok: oklch(0.72 0.14 152);
+  --ok-soft: oklch(0.27 0.04 152);
+  --wait: oklch(0.78 0.12 85);
+  --wait-soft: oklch(0.28 0.04 85);
+  --gap: oklch(0.72 0.15 50);
+  --gap-soft: oklch(0.28 0.05 50);
+  --bad: oklch(0.7 0.19 22);
+  --bad-soft: oklch(0.28 0.06 22);
 }
 
-.tnum { font-variant-numeric: tabular-nums; }
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-/* ช่องที่ยังไม่มีข้อมูล — ต้องเด่นกว่าช่องที่มีเลขเยอะ (กลับด้านจาก dashboard ปกติ) */
-.gap-hatch {
-  background: repeating-linear-gradient(
-    135deg, var(--color-gap-bg), var(--color-gap-bg) 5px, #ffe3d2 5px, #ffe3d2 10px
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-wait: var(--wait);
+  --color-wait-soft: var(--wait-soft);
+  --color-gap: var(--gap);
+  --color-gap-soft: var(--gap-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-sans: var(--font-plex-thai), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04';
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ตัวเลขในตารางต้องกว้างเท่ากันทุกหลัก ไม่งั้นสายตาไล่คอลัมน์ไม่ได้ */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ช่องที่ยังไม่มีข้อมูล ต้องเด่นกว่าช่องที่มีเลขเยอะ (กลับด้านจาก dashboard ปกติ) */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--muted-foreground) 12%, transparent) 0 4px,
+    transparent 4px 8px
   );
 }

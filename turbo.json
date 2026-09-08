@@ -1,6 +1,8 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
+  // 10 package รัน dev พร้อมกัน ต้องมากกว่าจำนวน persistent task
+  "concurrency": "12",
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

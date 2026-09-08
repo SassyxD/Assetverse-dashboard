@@ -29,7 +29,7 @@ const tierOf = (
       ? unavailable('ยังไม่เคยเก็บข้อมูลเว็บนี้')
       : trustworthy
         ? ok(v, total)
-        : insufficient(v, total, `คำนวณจาก ${total} แถว — น้อยเกินจะสรุป`);
+        : insufficient(v, total, `คำนวณจาก ${total} แถว น้อยเกินจะสรุป`);
 
   return {
     tier,
@@ -115,7 +115,7 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
       parsingDepth: none ? unavailable('ยังไม่เคย seed') : ok(0),
       deadLetterDepth: none ? unavailable('ยังไม่เคย seed') : ok(dlq),
       deadLetterReasons: dlq > 0
-        ? [{ reason: 'HTTP 523 — ต้นทางล่ม (Cloudflare ต่อ origin ไม่ได้)', count: dlq }]
+        ? [{ reason: 'HTTP 523 ต้นทางล่ม (Cloudflare ต่อ origin ไม่ได้)', count: dlq }]
         : [],
       inFlight: none ? unavailable('ยังไม่เคย seed') : ok(0),
       avgWaitSeconds: unavailable('ยังไม่ stamp เวลาตอน enqueue'),
@@ -125,7 +125,7 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
     },
     crawler: {
       crawlCompleteness: listed === null
-        ? unavailable('ยังไม่รู้ตัวหาร — ต้องสำรวจ (--plan) ก่อน')
+        ? unavailable('ยังไม่รู้ตัวหาร ต้องสำรวจ (--plan) ก่อน')
         : m(Number((records / listed).toFixed(4))),
       savedRecords: none ? unavailable('ยังไม่เคยเก็บ') : ok(records),
       listedOnMarketplace: listed === null
@@ -224,13 +224,13 @@ const buildRuns = ({ site, status, records }: Seed) => {
         id: 'baania-2026-09-condo', site, cycle: CYCLE, phase: 'crawling' as const,
         status: 'source_down' as const, startedAt: '2026-09-02T20:00:45Z',
         finishedAt: null, pagesDone: 0, itemsSaved: 0, pagesSkipped: 3,
-        message: 'ไม่ต้องทำอะไร — ต้นทางตอบ 523 (เซิร์ฟเวอร์ baania ล่ม) ระบบรอแล้วลองใหม่เอง',
+        message: 'ไม่ต้องทำอะไร ต้นทางตอบ 523 (เซิร์ฟเวอร์ baania ล่ม) ระบบรอแล้วลองใหม่เอง',
       },
       {
         id: 'baania-2026-08-house', site, cycle: '2026-08', phase: 'done' as const,
         status: 'ok' as const, startedAt: '2026-08-31T12:56:00Z',
         finishedAt: '2026-08-31T15:10:00Z', pagesDone: 100, itemsSaved: records,
-        pagesSkipped: 3, message: 'ข้ามไป 3 หน้า (ต้นทางตอบ 5xx) — ไม่กระทบยอดรวม',
+        pagesSkipped: 3, message: 'ข้ามไป 3 หน้า (ต้นทางตอบ 5xx) ไม่กระทบยอดรวม',
       },
     ];
   }
@@ -239,7 +239,7 @@ const buildRuns = ({ site, status, records }: Seed) => {
       id: `${site}-2026-09-sample`, site, cycle: CYCLE, phase: 'done' as const,
       status: 'ok' as const, startedAt: '2026-08-19T16:30:00Z',
       finishedAt: '2026-08-19T16:32:00Z', pagesDone: 2, itemsSaved: records,
-      pagesSkipped: 0, message: 'รอบทดสอบ — ยังไม่ได้เก็บเต็ม',
+      pagesSkipped: 0, message: 'รอบทดสอบ ยังไม่ได้เก็บเต็ม',
     },
   ];
 };

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { measurement } from './measurement.js';
-import { siteId, sourceStatus, owner } from './site.js';
+import { siteId, siteKind, sourceStatus, owner } from './site.js';
 import { tierSummary, rangeCheck, missingCombo } from './kbmf.js';
 import { coverage } from './coverage.js';
 import {
@@ -38,6 +38,7 @@ export const siteOverview = z.object({
   site: siteId,
   domain: z.string(),
   label: z.string(),
+  kind: siteKind,
   status: sourceStatus,
   owner,
   trustworthy: z.boolean(),
@@ -45,6 +46,10 @@ export const siteOverview = z.object({
   crawlCompleteness: measurement(z.number().min(0).max(1)),
   primaryFillRate: measurement(z.number().min(0).max(1)),
   deadLetterDepth: measurement(z.number().int().nonnegative()),
+  /** แถวที่ค่ามีอยู่แต่หลุดช่วง — คนละเรื่องกับ null rate ที่จับเฉพาะค่าที่หาย */
+  outOfRangeRecords: measurement(z.number().int().nonnegative()),
+  /** อาการสั้นๆ ที่คนอ่านแล้วรู้ว่าเกิดอะไร คิดที่ backend ไม่ให้ UI ประกอบเอง */
+  symptom: z.string(),
   scopesWithData: z.number().int().nonnegative(),
   scopesTotal: z.number().int().positive(),
   /** คะแนนความรุนแรง มาก = ควรไปดูก่อน คำนวณที่ backend ไม่ให้ UI คิดเอง */

@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // ปุ่ม dev อยู่มุมซ้ายล่างทับ footer ของ sidebar
+  devIndicators: { position: 'bottom-right' },
   // package ใน workspace เป็น TS/ESM — ให้ Next แปลงให้
   transpilePackages: ['@assetverse/contracts'],
   async rewrites() {

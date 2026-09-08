@@ -23,6 +23,24 @@ const severityOf = (s: SiteSnapshot): number => {
   return n;
 };
 
+const n = (v: number) => v.toLocaleString('th-TH');
+
+/** อาการสั้นที่สุดที่ยังบอกได้ว่าเกิดอะไร ไม่ใช่ประโยคอธิบาย */
+const symptomOf = (s: SiteSnapshot): string => {
+  if (s.status === 'never_run') return 'ยังไม่ตั้ง seed';
+  if (s.status === 'source_down') return 'ต้นทางตอบ 523 ระบบรอแล้วลองใหม่เอง';
+  if (s.status === 'network_path_down') return 'เส้นทางเราไม่ถึงปลายทาง';
+  if (s.status === 'throttled') return 'ถูกบล็อก ต้องลด rate';
+  if (s.status === 'failed') return 'งานหยุดกลางรอบ';
+  if (!s.trustworthy) {
+    const got = s.crawler.savedRecords.value ?? 0;
+    const listed = s.crawler.listedOnMarketplace.value;
+    return listed === null ? `เก็บได้ ${n(got)} แถว` : `เก็บได้ ${n(got)} จาก ${n(listed)} แถว`;
+  }
+  const gaps = s.coverage.scopesTotal - s.coverage.scopesWithData;
+  return gaps > 0 ? `ยังว่าง ${gaps} ขอบเขต` : 'ปกติ';
+};
+
 export const overview = (): SiteOverview[] =>
   snapshots()
     .map((s) => {
@@ -32,6 +50,7 @@ export const overview = (): SiteOverview[] =>
         site: s.site,
         domain: meta.domain,
         label: meta.label,
+        kind: meta.kind,
         status: s.status,
         owner: s.owner,
         trustworthy: s.trustworthy,
@@ -39,6 +58,10 @@ export const overview = (): SiteOverview[] =>
         crawlCompleteness: s.crawler.crawlCompleteness,
         primaryFillRate: primary.fillRate,
         deadLetterDepth: s.queue.deadLetterDepth,
+        outOfRangeRecords: s.status === 'never_run'
+          ? unavailable<number>('ยังไม่เคยเก็บข้อมูลเว็บนี้')
+          : ok(s.rangeChecks.reduce((sum, r) => sum + r.records, 0)),
+        symptom: symptomOf(s),
         scopesWithData: s.coverage.scopesWithData,
         scopesTotal: s.coverage.scopesTotal,
         severity: severityOf(s),
@@ -53,7 +76,7 @@ const infra = (): InfraMetrics => ({
     monthlyCostUsd: unavailable('ยังไม่ต่อ Cost Explorer'),
   },
   aurora: {
-    rows: unavailable('ยังไม่ได้ต่อ Aurora — ตอนนี้เขียนลงดิสก์'),
+    rows: unavailable('ยังไม่ได้ต่อ Aurora ตอนนี้เขียนลงดิสก์'),
     replicaLagMs: unavailable('ยังไม่ได้ต่อ Aurora'),
     connections: unavailable('ยังไม่ได้ต่อ Aurora'),
   },
@@ -70,7 +93,7 @@ const infra = (): InfraMetrics => ({
     label: h.label,
     status: h.id === 'target' ? ('down' as const) : ('ok' as const),
     ...(h.id === 'target'
-      ? { detail: 'baania ตอบ 523 — Cloudflare ต่อ origin ไม่ได้ (cf-cache-status: STALE)' }
+      ? { detail: 'baania ตอบ 523 · Cloudflare ต่อ origin ไม่ได้ (cf-cache-status: STALE)' }
       : {}),
   })),
   storageAvailability: unavailable('ยังไม่ได้นิยาม total storage size'),
@@ -86,37 +109,35 @@ const headlines = (rows: SiteOverview[], snaps: SiteSnapshot[]): Headline[] => {
 
   return [
     {
-      question: 'รอบเดือนนี้ไปถึงไหนแล้ว',
+      question: 'รอบนี้ไปถึงไหน',
       answer: `เสร็จ ${withData.length} / ${rows.length} เว็บ`,
       tone: withData.length < rows.length / 2 ? 'gap' : 'ok',
-      detail: `ยังไม่เคยรัน ${rows.length - withData.length} เว็บ · ` +
-        `กำลังรอต้นทาง ${waiting.length} เว็บ`,
+      detail: `ยังไม่รัน ${rows.length - withData.length} เว็บ`,
     },
     {
-      question: 'มีอะไรพังที่ต้องมีคนจัดการไหม',
-      answer: needsUs.length === 0
-        ? `ไม่มี — ${waiting.length} งานกำลังรอต้นทาง`
-        : `มี ${needsUs.length} เว็บ`,
+      question: 'มีอะไรต้องแก้ไหม',
+      answer: needsUs.length === 0 ? 'ไม่มี' : `${needsUs.length} เว็บ`,
       tone: needsUs.length === 0 ? 'wait' : 'bad',
-      detail: needsUs.length === 0
-        ? 'ต้นทางล่มเอง ไม่ใช่ระบบเรา ระบบรอแล้วลองใหม่เองอยู่ ไม่ต้องแตะ'
-        : needsUs.map((r) => `${r.domain} (${r.owner === 'infra' ? 'infra' : 'ทีมเรา'})`).join(' · '),
+      detail:
+        needsUs.length === 0
+          ? `รอต้นทาง ${waiting.length} เว็บ ระบบลองใหม่เอง`
+          : needsUs.map((r) => r.domain).join(' · '),
     },
     {
-      question: 'ข้อมูลที่มีเชื่อถือได้ไหม',
-      answer: `เชื่อได้ ${trusted.length} / ${withData.length} เว็บที่มีข้อมูล`,
+      question: 'เชื่อตัวเลขได้ไหม',
+      answer: `${trusted.length} / ${withData.length} เว็บ`,
       tone: trusted.length === withData.length ? 'ok' : 'gap',
-      detail: withData
-        .filter((r) => !r.trustworthy)
-        .map((r) => `${r.domain} มี ${r.savedRecords.value ?? 0} แถว — ยันไม่ได้`)
-        .join(' · ') || 'ทุกเว็บมีตัวอย่างพอจะสรุป',
+      detail:
+        withData
+          .filter((r) => !r.trustworthy)
+          .map((r) => `${r.domain} ${n(r.savedRecords.value ?? 0)} แถว`)
+          .join(' · ') || 'ตัวอย่างพอสรุปทุกเว็บ',
     },
     {
-      question: 'ยังขาดข้อมูลส่วนไหน',
+      question: 'ยังขาดตรงไหน',
       answer: `ขาด ${gaps} / ${total} ขอบเขต`,
       tone: 'gap',
-      detail: 'ขอบเขต = ประเภททรัพย์ × สถานะขาย ต่อเว็บ · ' +
-        'ยอด record รวมไม่บอกเรื่องนี้',
+      detail: 'ขอบเขต = ประเภททรัพย์ × สถานะขาย',
     },
   ];
 };

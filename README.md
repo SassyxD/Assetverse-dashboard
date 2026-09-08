@@ -3,10 +3,6 @@
 มอนิเตอร์ pipeline เก็บข้อมูลอสังหาริมทรัพย์จาก 17 เว็บ marketplace/ธนาคารในไทย
 ดูอย่างเดียว ไม่มีปุ่มสั่งงาน
 
-> **สถานะ: โค้ดเขียนครบแล้ว แต่ยังไม่ได้ compile** — sandbox ที่ผมทำงานอยู่ดึง
-> native binary (turbo / TypeScript 7 / Next SWC สำหรับ arm64) ไม่ผ่าน
-> ต้องรัน `pnpm install` บนเครื่องพี่ก่อน แล้วถ้า typecheck ฟ้องอะไรบอกได้
-
 ## รัน
 
 ```bash
@@ -15,12 +11,29 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` เปิดพร้อมกันหมด — web ที่ `:3000` · gateway `:4100` · service ย่อย `:4101-4105`
+`pnpm dev` เปิดพร้อมกันหมด · web ที่ `:3000` · gateway `:4100` · service ย่อย `:4101-4105`
 
 ```bash
 pnpm typecheck    # ตรวจ type ทุก package
 pnpm build        # build ทุกอย่าง
 ```
+
+## หน้าเว็บ
+
+| route | ตอบคำถามอะไร |
+|---|---|
+| `/` | ภาพรวม 17 เว็บ เรียงตาม severity · รอบนี้ไปถึงไหน ใครต้องแก้ ดูเว็บไหนก่อน |
+| `/sites/[site]` | สายงาน S1-S8 ของเว็บนั้น · queue / fetcher / extractor / LLM recovery |
+| `/sites/[site]/quality` | coverage matrix · fill rate ต่อ field · ค่าที่หลุดช่วง |
+| `/infra` | 3 สาเหตุที่เข้าเว็บไม่ได้ · เส้นทาง H1-H9 · S3 / Aurora / Fargate |
+
+UI เป็น shadcn (Tailwind 4 + token ใน `globals.css`) component อยู่ที่
+`apps/web/src/components/ui` เพิ่มตัวใหม่ด้วย `npx shadcn@latest add <name>` ได้เลย
+เพราะมี `components.json` ตั้งไว้แล้ว
+
+ชั้นที่ห้ามข้ามคือ `components/measure.tsx` · ทุกตัวเลขที่เป็น `Measurement`
+ต้องผ่าน `Field` / `Cell` ที่นั่น เพื่อให้ "ยังไม่วัด" กับ "วัดแล้วได้ศูนย์"
+ไม่มีทางแสดงเหมือนกัน (ช่องที่ยังไม่วัดเป็นลายทแยง)
 
 ## เวอร์ชัน
 

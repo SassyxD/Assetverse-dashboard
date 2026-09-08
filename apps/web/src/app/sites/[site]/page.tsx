@@ -1,251 +1,376 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'next/navigation';
-import clsx from 'clsx';
-import { api, qk } from '@/lib/api';
-import { showNum, showPct, showSeconds } from '@/lib/format';
-import { Panel, Pill, Stat, StatusPill, OwnerTag } from '@/components/ui';
-import { SitePicker } from '@/components/site-picker';
-import { KbmfTiers } from '@/components/kbmf-tiers';
+import { useQuery } from '@tanstack/react-query';
+import { AlertTriangle, Database, Layers, Percent } from 'lucide-react';
+import type { InfraMetrics, SiteSnapshot } from '@assetverse/contracts';
 
-export default function SitePage() {
+import { api, qk } from '@/lib/api';
+import { NO_DATA, showNum, showPct, showSeconds } from '@/lib/format';
+import { Shell } from '@/components/shell';
+import {
+  Breakdown,
+  Field,
+  FieldGrid,
+  NotWired,
+  Panel,
+  StatusBadge,
+  allMissing,
+  ownerLabel,
+} from '@/components/measure';
+import { PipelineStages, type Stage } from '@/components/pipeline-stages';
+import { DashboardMetricCard } from '@/components/ui/metric-card';
+import { Badge } from '@/components/ui/badge';
+
+export default function SitePipelinePage() {
   const site = String(useParams()['site'] ?? '');
   const { data, isPending, error } = useQuery({
     queryKey: qk.site(site),
     queryFn: () => api.site(site),
     enabled: site.length > 0,
   });
+  const { data: summary } = useQuery({ queryKey: qk.dashboard, queryFn: api.dashboard });
+
+  if (isPending)
+    return (
+      <Shell title={site}>
+        <p className="text-muted-foreground text-sm">กำลังโหลด</p>
+      </Shell>
+    );
+  if (error)
+    return (
+      <Shell title={site}>
+        <p className="text-bad text-sm">โหลดไม่ได้: {error.message}</p>
+      </Shell>
+    );
+
+  const d = data;
+  const primary = d.tiers.find((t) => t.tier === 'primary');
+  const llm = [
+    d.llmRecovery.invocations,
+    d.llmRecovery.recoveryRate,
+    d.llmRecovery.iterations,
+    d.llmRecovery.scriptsGenerated,
+    d.llmRecovery.scriptsAccepted,
+    d.llmRecovery.tokensUsed,
+  ];
+  const change = [d.changeDetection.pagesChecked, d.changeDetection.changeKind.structure];
+  const pii = [d.pii.scanned, d.pii.found];
+  const captcha = [d.captcha.solveAttempts, d.captcha.costUsd];
 
   return (
-    <main className="mx-auto max-w-[1240px] px-5 pb-16 pt-4">
-      <header className="flex flex-wrap items-center gap-3.5 border-b border-line pb-3.5">
-        <SitePicker current={site} />
-        {data ? (
-          <>
-            <StatusPill status={data.status} />
-            <OwnerTag owner={data.owner} />
-            {!data.trustworthy && data.status !== 'never_run' ? (
-              <Pill tone="gap">ข้อมูลน้อยเกินจะสรุป</Pill>
-            ) : null}
-          </>
-        ) : null}
-        <span className="ml-auto text-xs text-dim">รอบ {data?.cycle ?? '—'}</span>
-      </header>
-
-      <div className="pt-4">
-        {isPending ? <p className="text-dim">กำลังโหลด…</p> : null}
-        {error ? <p className="text-bad">โหลดไม่ได้: {error.message}</p> : null}
-        {data ? (
-          <>
-            <Panel title="งานรอบนี้">
-              {data.runs.length === 0 ? (
-                <p className="text-dim">ยังไม่เคยรันเว็บนี้</p>
-              ) : (
-                data.runs.map((r) => (
-                  <div key={r.id} className="border-b border-line-soft py-2.5 last:border-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <StatusPill status={r.status} />
-                      <b>{r.cycle}</b>
-                      <span className="text-[11px] text-dim">{r.phase}</span>
-                      <span className="tnum ml-auto text-[11px] text-faint">
-                        {r.itemsSaved.toLocaleString()} รายการ · ข้าม {r.pagesSkipped} หน้า
-                      </span>
-                    </div>
-                    {r.message ? (
-                      <p className={clsx('mt-2 rounded px-2.5 py-1.5 text-[11.5px]',
-                        r.status === 'source_down' ? 'bg-wait-bg text-wait' : 'bg-line-soft text-dim')}>
-                        {r.message}
-                      </p>
-                    ) : null}
-                  </div>
-                ))
-              )}
-            </Panel>
-
-            <Panel title="Queue" hint="DLQ คือสัญญาณเตือนล่วงหน้า — โผล่ก่อน completeness ตก">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <Stat label="frontier depth" text={showNum(data.queue.frontierDepth)} m={data.queue.frontierDepth} />
-                <Stat label="parsing depth" text={showNum(data.queue.parsingDepth)} m={data.queue.parsingDepth} />
-                <Stat label="dead letter (DLQ)" text={showNum(data.queue.deadLetterDepth)} m={data.queue.deadLetterDepth} />
-                <Stat label="in-flight (ยังไม่ ack)" text={showNum(data.queue.inFlight)} m={data.queue.inFlight} />
-                <Stat label="avg queue wait" text={showSeconds(data.queue.avgWaitSeconds)} m={data.queue.avgWaitSeconds} />
-                <Stat label="purged" text={showNum(data.queue.purged)} m={data.queue.purged} />
-                <div>
-                  <div className="text-[10.5px] text-faint">Tq2q ตั้งไว้ / วัดได้</div>
-                  <div className="tnum mt-px text-base font-semibold">
-                    {data.queue.tq2qConfiguredMs} ms
-                    <span className="text-faint"> / —</span>
-                  </div>
-                  <div className="mt-0.5 text-[10.5px] text-dim">invariant: fetch2fetch &lt; Tq2q</div>
-                </div>
-              </div>
-              {data.queue.deadLetterReasons.length > 0 ? (
-                <div className="mt-4">
-                  <h3 className="mb-1.5 text-xs font-semibold">เหตุผลที่เข้า DLQ</h3>
-                  {data.queue.deadLetterReasons.map((r) => (
-                    <div key={r.reason} className="flex justify-between border-b border-line-soft py-1 text-[11.5px] last:border-0">
-                      <span>{r.reason}</span>
-                      <span className="tnum font-semibold">{r.count}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </Panel>
-
-            <Panel title="Fetcher (Crawler)">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <Stat label="crawl completeness" text={showPct(data.crawler.crawlCompleteness)} m={data.crawler.crawlCompleteness} />
-                <Stat label="record ที่เก็บได้" text={showNum(data.crawler.savedRecords)} m={data.crawler.savedRecords} />
-                <Stat label="ประกาศทั้งหมดบนเว็บ" text={showNum(data.crawler.listedOnMarketplace)} m={data.crawler.listedOnMarketplace} />
-                <Stat label="retry rate" text={showPct(data.crawler.retryRate)} m={data.crawler.retryRate} />
-                <Stat label="URL ใหม่ที่ต้องเก็บ" text={showPct(data.crawler.newUrlRatio)} m={data.crawler.newUrlRatio} />
-                <Stat label="ประกาศที่หายไป" text={showNum(data.crawler.delistedUrls)} m={data.crawler.delistedUrls} />
-                <Stat label="เวลาที่ใช้" text={showSeconds(data.crawler.totalCrawlerSeconds)} m={data.crawler.totalCrawlerSeconds} />
-                <Stat label="throughput" text={showNum(data.crawler.throughputPagesPerMin)} m={data.crawler.throughputPagesPerMin} />
-              </div>
-            </Panel>
-
-            <CoveragePanel coverage={data.coverage} />
-
-            <Panel title="Extractor">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <Stat label="extract success rate" text={showPct(data.extractor.primFieldsSuccessRate)} m={data.extractor.primFieldsSuccessRate} />
-                <Stat label="primary null rate" text={showPct(data.extractor.primFieldsNullRate)} m={data.extractor.primFieldsNullRate} />
-                <Stat label="fallback null rate" text={showPct(data.extractor.fallbackFieldsNullRate)} m={data.extractor.fallbackFieldsNullRate} />
-                <Stat label="เวลาที่ใช้" text={showSeconds(data.extractor.totalExtractorSeconds)} m={data.extractor.totalExtractorSeconds} />
-              </div>
-            </Panel>
-
-            <KbmfTiers tiers={data.tiers} />
-
-            {data.missingCombos.length > 0 ? (
-              <Panel title="สาเหตุที่แถวตก primary" hint="บอกว่าควรไปแก้ field ไหนก่อน">
-                {data.missingCombos.map((c) => (
-                  <div key={c.fields.join(',')} className="flex items-center gap-3 border-b border-line-soft py-1.5 text-[11.5px] last:border-0">
-                    <code className="font-mono">{c.fields.join(' + ')}</code>
-                    <span className="tnum ml-auto">{c.records.toLocaleString()}</span>
-                    <span className="tnum w-14 text-right text-dim">{(c.share * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </Panel>
-            ) : null}
-
-            {data.rangeChecks.length > 0 ? (
-              <Panel title="ค่าที่มีแต่น่าสงสัย" hint="null rate จับได้แต่ค่าที่หาย ไม่จับค่าที่ผิด">
-                {data.rangeChecks.map((r) => (
-                  <div key={r.id} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-line-soft py-1.5 last:border-0">
-                    <div>
-                      <div className="text-[12px]"><b>{r.field}</b> — {r.label}</div>
-                      <div className="text-[11px] text-dim">{r.expectation}</div>
-                    </div>
-                    <span className={clsx('tnum text-right text-xs',
-                      r.records > 0 && r.severity === 'warn' && 'font-semibold text-gap')}>
-                      {r.records.toLocaleString()} แถว
-                    </span>
-                  </div>
-                ))}
-              </Panel>
-            ) : null}
-
-            <Panel title="LLM recovery" hint="ลูปในไดอะแกรมไม่มีเงื่อนไขหยุด — ต้องเห็นรอบที่วน">
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                <Stat label="เรียก LLM Gateway" text={showNum(data.llmRecovery.invocations)} m={data.llmRecovery.invocations} />
-                <Stat label="recovery rate" text={showPct(data.llmRecovery.recoveryRate)} m={data.llmRecovery.recoveryRate} />
-                <Stat label="รอบที่วนไปแล้ว" text={showNum(data.llmRecovery.iterations)} m={data.llmRecovery.iterations} />
-                <Stat label="token ที่ใช้" text={showNum(data.llmRecovery.tokensUsed)} m={data.llmRecovery.tokensUsed} />
-              </div>
-            </Panel>
-
-            <Panel title="องค์ประกอบของทีมอื่น" hint="change detection · PII · 2captcha">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <h3 className="mb-1.5 text-xs font-semibold">Change detection <Pill tone="mute">ทีมอื่น</Pill></h3>
-                  <Stat label="หน้าที่ตรวจ" text={showNum(data.changeDetection.pagesChecked)} m={data.changeDetection.pagesChecked} />
-                  <div className="mt-2"><Stat label="โครง html เปลี่ยน" text={showNum(data.changeDetection.changeKind.structure)} m={data.changeDetection.changeKind.structure} /></div>
-                </div>
-                <div>
-                  <h3 className="mb-1.5 text-xs font-semibold">PII detector <Pill tone="mute">ทีมอื่น</Pill></h3>
-                  <Stat label="สแกนแล้ว" text={showNum(data.pii.scanned)} m={data.pii.scanned} />
-                  <p className="mt-2 text-[11px] text-dim">
-                    ทำ detect ที่ขั้น: <b>{data.pii.stage === 'unknown' ? 'ยังไม่ทราบ' : data.pii.stage}</b>
-                    {data.pii.stage === 'unknown' ? ' — ต้องเคาะกับทีมนั้น ถ้าอยู่หลังเซฟ S3 แปลว่า PII ค้างใน S3 ก่อนถูกตรวจ' : null}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="mb-1.5 text-xs font-semibold">2captcha <Pill tone="mute">ทีมอื่น</Pill></h3>
-                  <Stat label="ครั้งที่เรียก" text={showNum(data.captcha.solveAttempts)} m={data.captcha.solveAttempts} />
-                  <p className="mt-2 text-[11px] text-dim">ยังไม่มีระบบนี้ — ที่เจอคือ HTTP 523 (origin ล่ม) ไม่ใช่ captcha</p>
-                </div>
-              </div>
-            </Panel>
-          </>
-        ) : null}
+    <Shell
+      title={site}
+      hint={ownerLabel(d.owner)}
+      actions={
+        <>
+          <StatusBadge status={d.status} />
+          {!d.trustworthy && d.status !== 'never_run' ? (
+            <Badge variant="gap">ยันไม่ได้</Badge>
+          ) : null}
+        </>
+      }
+    >
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <DashboardMetricCard
+          title="%crawl_Completeness"
+          value={showPct(d.crawler.crawlCompleteness)}
+          icon={Percent}
+          missing={d.crawler.crawlCompleteness.state === 'unavailable'}
+          note={d.crawler.crawlCompleteness.note}
+        />
+        <DashboardMetricCard
+          title="saved_records"
+          value={showNum(d.crawler.savedRecords)}
+          icon={Database}
+          missing={d.crawler.savedRecords.state === 'unavailable'}
+          note={d.crawler.savedRecords.note}
+        />
+        <DashboardMetricCard
+          title="dlq_count"
+          value={showNum(d.queue.deadLetterDepth)}
+          icon={AlertTriangle}
+          missing={d.queue.deadLetterDepth.state === 'unavailable'}
+          note="โผล่ก่อน completeness ตก"
+        />
+        <DashboardMetricCard
+          title="primary fill rate"
+          value={primary ? showPct(primary.fillRate) : NO_DATA}
+          icon={Layers}
+          missing={!primary || primary.fillRate.state === 'unavailable'}
+          note={
+            primary && primary.recordCompleteRate.value !== null
+              ? `record complete ${showPct(primary.recordCompleteRate)}`
+              : undefined
+          }
+        />
       </div>
-    </main>
+
+      <Panel
+        title="สายงานรอบนี้"
+        hint="เรียงตามการไหลจริง ช่องลายทแยงคือยังไม่ได้วัด ไม่ใช่ศูนย์"
+        className="mb-5"
+      >
+        <PipelineStages stages={stagesOf(d, summary?.infra)} />
+      </Panel>
+
+      <div className="grid items-start gap-5 xl:grid-cols-2">
+        <Panel title="Queue และ DLQ" hint="ack หลังเซฟสำเร็จ ของที่ค้างจึงนับเป็น in-flight">
+          <FieldGrid className="lg:grid-cols-3">
+            <Field name="queue_depth (frontier)" m={d.queue.frontierDepth} />
+            <Field name="queue_depth (parsing)" m={d.queue.parsingDepth} />
+            <Field name="dlq_count" m={d.queue.deadLetterDepth} />
+            <Field name="in_flight" m={d.queue.inFlight} />
+            <Field name="avg_queue_wait_time" m={d.queue.avgWaitSeconds} format={showSeconds} />
+            <Field name="purged_messages" m={d.queue.purged} />
+            <Field
+              name="Tq2q ที่วัดได้"
+              m={d.queue.tq2qObservedMs}
+              hint={`ตั้งไว้ ${d.queue.tq2qConfiguredMs} ms`}
+            />
+          </FieldGrid>
+          {d.queue.deadLetterReasons.length > 0 ? (
+            <div className="mt-4 border-t pt-4">
+              <h3 className="mb-2.5 font-mono text-[10px] tracking-wide uppercase">
+                เหตุผลที่เข้า DLQ
+              </h3>
+              <Breakdown
+                rows={d.queue.deadLetterReasons.map((r) => ({ label: r.reason, value: r.count }))}
+              />
+            </div>
+          ) : null}
+        </Panel>
+
+        <Panel title="Fetcher" hint="ตัวหารคือจำนวนประกาศที่เว็บนั้น list ไว้">
+          <FieldGrid className="lg:grid-cols-3">
+            <Field
+              name="%crawl_Completeness"
+              m={d.crawler.crawlCompleteness}
+              format={(m) => showPct(m)}
+            />
+            <Field name="saved_records" m={d.crawler.savedRecords} />
+            <Field name="listed_on_marketplace" m={d.crawler.listedOnMarketplace} />
+            <Field name="retry_Rate" m={d.crawler.retryRate} format={(m) => showPct(m)} />
+            <Field name="ratio_newURL" m={d.crawler.newUrlRatio} format={(m) => showPct(m)} />
+            <Field name="no_delisted_URLs" m={d.crawler.delistedUrls} />
+            <Field
+              name="total_crawler_time"
+              m={d.crawler.totalCrawlerSeconds}
+              format={showSeconds}
+            />
+            <Field name="throughput /นาที" m={d.crawler.throughputPagesPerMin} />
+          </FieldGrid>
+          {d.crawler.statusCounts.length > 0 ? (
+            <div className="mt-4 border-t pt-4">
+              <h3 className="mb-2.5 font-mono text-[10px] tracking-wide uppercase">
+                http status ที่เจอ
+              </h3>
+              <Breakdown
+                rows={d.crawler.statusCounts.map((s) => ({
+                  label: String(s.status),
+                  value: s.count,
+                  hint: s.status >= 500 ? 'ต้นทางล่ม รอได้' : 'เราถูกบล็อก ต้องลด rate',
+                }))}
+              />
+            </div>
+          ) : null}
+        </Panel>
+
+        <Panel title="Extractor" hint="null rate จับค่าที่หาย ไม่จับค่าที่ผิด ดูคู่กับหน้าคุณภาพ">
+          <FieldGrid className="lg:grid-cols-3">
+            <Field
+              name="txn_prim_Fields_SuccessRate"
+              m={d.extractor.primFieldsSuccessRate}
+              format={(m) => showPct(m)}
+            />
+            <Field
+              name="%prim_Fields_Nullrate"
+              m={d.extractor.primFieldsNullRate}
+              format={(m) => showPct(m)}
+            />
+            <Field
+              name="%fallbacks_Fields_Nullrate"
+              m={d.extractor.fallbackFieldsNullRate}
+              format={(m) => showPct(m)}
+            />
+            <Field name="extracted_records" m={d.extractor.extractedRecords} />
+            <Field
+              name="total_extractor_time"
+              m={d.extractor.totalExtractorSeconds}
+              format={showSeconds}
+            />
+          </FieldGrid>
+          {d.tiers.length > 0 ? (
+            <div className="mt-4 border-t pt-4">
+              <h3 className="mb-2.5 font-mono text-[10px] tracking-wide uppercase">
+                fill rate ต่อ tier
+              </h3>
+              <Breakdown
+                rows={d.tiers.map((t) => ({
+                  label: t.tier,
+                  value: Math.round((t.fillRate.value ?? 0) * 100),
+                  display: showPct(t.fillRate, 0),
+                  hint: t.passes ? `ผ่านเกณฑ์ ${t.threshold * 100}%` : `ต่ำกว่า ${t.threshold * 100}%`,
+                }))}
+              />
+            </div>
+          ) : null}
+        </Panel>
+
+        <Panel title="LLM recovery" hint="ลูปในไดอะแกรมไม่มีเงื่อนไขหยุด ต้องเห็นรอบที่วน">
+          {allMissing(llm) ? (
+            <NotWired ms={llm} />
+          ) : (
+            <FieldGrid className="lg:grid-cols-3">
+              <Field name="llm_gateway_calls" m={d.llmRecovery.invocations} />
+              <Field
+                name="recovery_rate"
+                m={d.llmRecovery.recoveryRate}
+                format={(m) => showPct(m)}
+              />
+              <Field name="loop_iterations" m={d.llmRecovery.iterations} />
+              <Field name="scripts_generated" m={d.llmRecovery.scriptsGenerated} />
+              <Field name="scripts_accepted" m={d.llmRecovery.scriptsAccepted} />
+              <Field name="token_cost" m={d.llmRecovery.tokensUsed} />
+            </FieldGrid>
+          )}
+          {d.llmRecovery.ratePerIteration.length > 0 ? (
+            <div className="mt-4 border-t pt-4">
+              <Breakdown
+                rows={d.llmRecovery.ratePerIteration.map((r) => ({
+                  label: `รอบ ${r.iteration}`,
+                  value: Math.round(r.recovered * 100),
+                }))}
+              />
+            </div>
+          ) : null}
+        </Panel>
+      </div>
+
+      <Panel title="งานรอบนี้" className="mt-5">
+        {d.runs.length === 0 ? (
+          <p className="text-muted-foreground text-sm">ยังไม่เคยรันเว็บนี้</p>
+        ) : (
+          <ul className="divide-y">
+            {d.runs.map((r) => (
+              <li key={r.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <StatusBadge status={r.status} />
+                  <span className="tnum text-sm font-medium">{r.cycle}</span>
+                  <span className="text-muted-foreground text-[11px]">{r.phase}</span>
+                  <span className="tnum text-muted-foreground ml-auto text-[11px]">
+                    {r.itemsSaved.toLocaleString('th-TH')} รายการ · ข้าม {r.pagesSkipped} หน้า
+                  </span>
+                </div>
+                {r.message ? (
+                  <p className="text-muted-foreground mt-1.5 text-[12px]">{r.message}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Panel>
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+        <Panel title="Change detection" hint="อยู่ขั้น Seeding นับ URL ที่เข้า frontier">
+          {allMissing(change) ? (
+            <NotWired ms={change} />
+          ) : (
+            <FieldGrid className="grid-cols-1">
+              <Field name="pages_checked" m={d.changeDetection.pagesChecked} />
+              <Field name="structure_changed" m={d.changeDetection.changeKind.structure} />
+            </FieldGrid>
+          )}
+        </Panel>
+        <Panel title="PII detector" hint="ถ้าอยู่หลังเซฟ S3 แปลว่า PII ค้างใน S3 ก่อนถูกตรวจ">
+          {allMissing(pii) ? (
+            <NotWired ms={pii} />
+          ) : (
+            <FieldGrid className="grid-cols-1">
+              <Field name="scanned" m={d.pii.scanned} />
+              <Field name="found" m={d.pii.found} />
+            </FieldGrid>
+          )}
+          <p className="text-muted-foreground mt-2.5 text-[11px]">
+            ขั้นที่ตรวจ: {d.pii.stage === 'unknown' ? 'ยังไม่ทราบ' : d.pii.stage}
+          </p>
+        </Panel>
+        <Panel title="2captcha" hint="ที่เจอจริงคือ HTTP 523 คนละเรื่องกับ captcha">
+          {allMissing(captcha) ? (
+            <NotWired ms={captcha} />
+          ) : (
+            <FieldGrid className="grid-cols-1">
+              <Field name="2captcha_Count" m={d.captcha.solveAttempts} />
+              <Field name="cost_usd" m={d.captcha.costUsd} />
+            </FieldGrid>
+          )}
+        </Panel>
+      </div>
+    </Shell>
   );
 }
 
-const CoveragePanel = ({ coverage }: { coverage: import('@assetverse/contracts').Coverage }) => (
-  <Panel
-    title="ครอบคลุมอะไรบ้าง"
-    hint={`${coverage.scopesWithData} / ${coverage.scopesTotal} ขอบเขต — ยอดรวมไม่บอกเรื่องนี้`}
-  >
-    <table className="w-full text-xs">
-      <thead>
-        <tr className="text-[10.5px] text-faint">
-          <th className="px-2 py-1.5 text-left font-semibold">ประเภททรัพย์</th>
-          <th className="px-2 py-1.5 text-right font-semibold">ขายอยู่</th>
-          <th className="px-2 py-1.5 text-right font-semibold">ขายแล้ว</th>
-          <th className="px-2 py-1.5 text-right font-semibold">จังหวัด</th>
-        </tr>
-      </thead>
-      <tbody>
-        {[...new Set(coverage.cells.map((c) => c.propertyType))].map((pt) => {
-          const row = coverage.cells.filter((c) => c.propertyType === pt);
-          const best = row.reduce((a, b) => (b.records > a.records ? b : a));
-          return (
-            <tr key={pt} className="border-b border-line-soft last:border-0">
-              <td className="px-2 py-1.5">{pt}</td>
-              {['ขายอยู่', 'ขายแล้ว'].map((ss) => {
-                const cell = row.find((c) => c.sellState === ss);
-                const n = cell?.records ?? 0;
-                return (
-                  <td key={ss} className={clsx('tnum px-2 py-1.5 text-right',
-                    n === 0 ? 'gap-hatch text-center font-bold text-gap' : 'text-dim')}>
-                    {n === 0 ? 'ยังไม่เก็บ' : n.toLocaleString()}
-                  </td>
-                );
-              })}
-              <td className={clsx('tnum px-2 py-1.5 text-right',
-                best.areasCovered === 0 && 'font-semibold text-gap')}>
-                {best.areasCovered} / {best.areasTotal}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-
-    {coverage.areas.length > 0 ? (
-      <div className="mt-4">
-        <h3 className="mb-1.5 text-xs font-semibold">
-          จังหวัดที่มีข้อมูล
-          <span className="ml-2 font-normal text-dim">
-            (สีส้ม = มีไม่ถึง 10 แถว นับว่ามีข้อมูลไม่ได้)
-          </span>
-        </h3>
-        <div className="grid grid-cols-2 gap-x-6 md:grid-cols-3">
-          {coverage.areas.map((a) => (
-            <div key={a.area} className="flex justify-between border-b border-line-soft py-1 text-[11.5px]">
-              <span>{a.area}</span>
-              <span className={clsx('tnum', a.belowUsableThreshold ? 'font-semibold text-gap' : 'text-dim')}>
-                {a.records.toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    ) : null}
-  </Panel>
-);
+const stagesOf = (d: SiteSnapshot, infra?: InfraMetrics): Stage[] => {
+  const miss = (m: { state: string }) => m.state === 'unavailable';
+  return [
+    {
+      num: 'S1',
+      name: 'Seeding',
+      value: showNum(d.crawler.listedOnMarketplace),
+      sub: 'URL ที่ต้องเก็บ',
+      missing: miss(d.crawler.listedOnMarketplace),
+      team: 'change detection',
+    },
+    {
+      num: 'S2',
+      name: 'Frontier queue',
+      value: showNum(d.queue.frontierDepth),
+      sub: `in-flight ${showNum(d.queue.inFlight)}`,
+      missing: miss(d.queue.frontierDepth),
+    },
+    {
+      num: 'S3',
+      name: 'DLQ',
+      value: showNum(d.queue.deadLetterDepth),
+      sub: `retry ${showPct(d.crawler.retryRate)}`,
+      missing: miss(d.queue.deadLetterDepth),
+    },
+    {
+      num: 'S4',
+      name: 'Fetcher',
+      value: showNum(d.crawler.throughputPagesPerMin),
+      sub: 'หน้า/นาที',
+      missing: miss(d.crawler.throughputPagesPerMin),
+      team: '2captcha',
+    },
+    {
+      num: 'S5',
+      name: 'S3 + Aurora',
+      value: infra ? showNum(infra.s3.objects) : NO_DATA,
+      sub: `Aurora ${infra ? showNum(infra.aurora.rows) : NO_DATA}`,
+      missing: !infra || miss(infra.s3.objects),
+      team: 'PII detector',
+    },
+    {
+      num: 'S6',
+      name: 'Parsing queue',
+      value: showNum(d.queue.parsingDepth),
+      sub: `รอ ${showSeconds(d.queue.avgWaitSeconds)}`,
+      missing: miss(d.queue.parsingDepth),
+    },
+    {
+      num: 'S7',
+      name: 'Extractor',
+      value: showPct(d.extractor.primFieldsSuccessRate),
+      sub: `null ${showPct(d.extractor.primFieldsNullRate)}`,
+      missing: miss(d.extractor.primFieldsSuccessRate),
+    },
+    {
+      num: 'S8',
+      name: 'LLM recovery',
+      value: showPct(d.llmRecovery.recoveryRate),
+      sub: `รอบที่วน ${showNum(d.llmRecovery.iterations)}`,
+      missing: miss(d.llmRecovery.recoveryRate),
+    },
+  ];
+};

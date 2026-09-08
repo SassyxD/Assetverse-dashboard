@@ -4,7 +4,11 @@ packages:
   - packages/*
 
 # pnpm 10+ ไม่รัน postinstall ของ dependency เว้นแต่ระบุไว้ที่นี่
-onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
-  - esbuild
-  - sharp
+# (pnpm 12 เปลี่ยนชื่อจาก onlyBuiltDependencies เป็น allowBuilds)
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
+  sharp: true
+
+minimumReleaseAgeExclude:
+  - lucide-react@1.42.0
