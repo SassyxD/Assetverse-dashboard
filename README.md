@@ -35,6 +35,21 @@ UI เป็น shadcn (Tailwind 4 + token ใน `globals.css`) component อ�
 ต้องผ่าน `Field` / `Cell` ที่นั่น เพื่อให้ "ยังไม่วัด" กับ "วัดแล้วได้ศูนย์"
 ไม่มีทางแสดงเหมือนกัน (ช่องที่ยังไม่วัดเป็นลายทแยง)
 
+## deploy
+
+frontend รู้จัก `/api/*` ทางเดียว ของจริงอยู่ที่ไหนเป็นเรื่องของ config
+
+| สภาพแวดล้อม | `/api/*` ไปไหน |
+|---|---|
+| dev บนเครื่อง | proxy ไป gateway `:4100` (`beforeFiles` rewrite) |
+| Vercel | route handler ใน `apps/web/src/app/api` อ่าน fixtures ตรง |
+| มี gateway จริงบนคลาวด์ | ตั้ง `GATEWAY_URL` แล้ว proxy กลับไปเหมือน dev |
+
+route handler มีไว้ให้ deploy ตัวเดียวจบตอนยังเป็น mock · โครง response
+ต้องเท่ากับ `services/gateway` เสมอ แก้ที่หนึ่งต้องแก้อีกที่
+
+ตั้งค่าบน Vercel: root directory `apps/web` · build `cd ../.. && pnpm turbo run build --filter=@assetverse/web`
+
 ## เวอร์ชัน
 
 เช็คจาก npm registry วันที่ 7 ก.ย. 2026 ไม่ได้เดา
