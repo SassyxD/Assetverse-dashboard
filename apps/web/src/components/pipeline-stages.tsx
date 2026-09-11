@@ -15,7 +15,8 @@ export type Stage = {
  * เรียงตามการไหลจริง ไม่ได้เรียงตามความสำคัญของ metric
  */
 export const PipelineStages = ({ stages }: { stages: Stage[] }) => (
-  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+  // auto-fit ทำให้จำนวนขั้นเปลี่ยนได้โดยไม่ต้องแก้ breakpoint (fetcher 5 · extractor 3)
+  <div className="grid [grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))] gap-2">
     {stages.map((s) => (
       <div
         key={s.num}
@@ -34,7 +35,9 @@ export const PipelineStages = ({ stages }: { stages: Stage[] }) => (
         >
           {s.value}
         </div>
-        <div className="text-muted-foreground mt-auto pt-1.5 text-[11px] leading-snug">{s.sub}</div>
+        <div className="text-muted-foreground mt-auto pt-1.5 text-[11px] leading-snug">
+          {s.sub}
+        </div>
         {s.team ? (
           <div className="bg-secondary text-muted-foreground truncate rounded px-1.5 py-0.5 text-[10px]">
             {s.team}

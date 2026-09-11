@@ -15,10 +15,10 @@ export const cyclePhase = z.enum([
 export type CyclePhase = z.infer<typeof cyclePhase>;
 
 export const MONTHLY_CALENDAR = [
-  { day: 1, phase: 'crawling', label: 'รัน crawl รอบเดือน' },
-  { day: 5, phase: 'script_upload', label: 'อัปโหลด script ใหม่' },
-  { day: 10, phase: 'script_upload', label: 'อัปโหลด script ใหม่' },
-  { day: 12, phase: 'retry', label: 'retry' },
+  { day: 1, phase: 'crawling', label: 'Run the monthly crawl' },
+  { day: 5, phase: 'script_upload', label: 'Upload new scripts' },
+  { day: 10, phase: 'script_upload', label: 'Upload new scripts' },
+  { day: 12, phase: 'retry', label: 'Retry' },
 ] as const;
 
 export const run = z.object({

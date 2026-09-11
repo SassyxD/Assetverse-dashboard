@@ -6,12 +6,12 @@ export type SiteKind = z.infer<typeof siteKind>;
 
 /** 17 เว็บเป้าหมายตาม Assetverse Phase 2 — id ใช้เป็น key ทุกที่ */
 export const SITES = [
-  { id: 'scb', domain: 'asset.home.scb', label: 'SCB (ทรัพย์ธนาคาร/NPA)', kind: 'bank_npa' },
-  { id: 'ghb', domain: 'ghbhomecenter.com', label: 'ธอส. Home Center', kind: 'bank_npa' },
-  { id: 'kbank', domain: 'kasikornbank.com', label: 'กสิกรไทย', kind: 'bank_npa' },
-  { id: 'ktb', domain: 'npa.krungthai.com', label: 'กรุงไทย NPA', kind: 'bank_npa' },
-  { id: 'sam', domain: 'sam.or.th', label: 'บสส. (SAM)', kind: 'bank_npa' },
-  { id: 'taladnudbaan', domain: 'taladnudbaan.com', label: 'ตลาดนัดบ้าน', kind: 'marketplace' },
+  { id: 'scb', domain: 'asset.home.scb', label: 'SCB (bank-owned / NPA)', kind: 'bank_npa' },
+  { id: 'ghb', domain: 'ghbhomecenter.com', label: 'GHB Home Center', kind: 'bank_npa' },
+  { id: 'kbank', domain: 'kasikornbank.com', label: 'Kasikornbank', kind: 'bank_npa' },
+  { id: 'ktb', domain: 'npa.krungthai.com', label: 'Krungthai NPA', kind: 'bank_npa' },
+  { id: 'sam', domain: 'sam.or.th', label: 'SAM (Sukhumvit Asset Management)', kind: 'bank_npa' },
+  { id: 'taladnudbaan', domain: 'taladnudbaan.com', label: 'Talad Nud Baan', kind: 'marketplace' },
   { id: 'baanfinder', domain: 'baanfinder.com', label: 'BaanFinder', kind: 'marketplace' },
   { id: 'baania', domain: 'search.baania.com', label: 'Baania', kind: 'marketplace' },
   { id: 'ddproperty', domain: 'ddproperty.com', label: 'DDproperty', kind: 'marketplace' },
@@ -21,7 +21,7 @@ export const SITES = [
   { id: 'zmyhome', domain: 'th.zmyhome.com', label: 'ZmyHome', kind: 'marketplace' },
   { id: 'fazwaz', domain: 'fazwaz.co.th', label: 'FazWaz', kind: 'marketplace' },
   { id: 'homenayoo', domain: 'homenayoo.com', label: 'HomeNaYoo', kind: 'marketplace' },
-  { id: 'led', domain: 'asset.led.go.th', label: 'กรมบังคับคดี', kind: 'gov' },
+  { id: 'led', domain: 'asset.led.go.th', label: 'Legal Execution Department', kind: 'gov' },
 ] as const;
 
 export const siteId = z.enum(SITES.map((s) => s.id) as [string, ...string[]]);
@@ -36,9 +36,9 @@ export const site = z.object({
 export type Site = z.infer<typeof site>;
 
 export const SITE_KIND_LABEL: Record<SiteKind, string> = {
-  marketplace: 'marketplace',
-  bank_npa: 'ธนาคาร / NPA',
-  gov: 'หน่วยงานรัฐ',
+  marketplace: 'Marketplace',
+  bank_npa: 'Bank / NPA',
+  gov: 'Government',
 };
 
 /**

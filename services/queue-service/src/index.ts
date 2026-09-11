@@ -8,7 +8,7 @@ app.get('/queue', (c) =>
 
 app.get('/queue/:site', (c) => {
   const found = snapshots().find((s) => s.site === c.req.param('site'));
-  return found ? c.json(found.queue) : c.json({ error: { message: 'ไม่รู้จักเว็บนี้' } }, 404);
+  return found ? c.json(found.queue) : c.json({ error: { message: 'Unknown site' } }, 404);
 });
 
 /** DLQ แยกออกมาเป็น endpoint ของตัวเอง เพราะเป็น leading indicator ที่ต้องดูบ่อยสุด */

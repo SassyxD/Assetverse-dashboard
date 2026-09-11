@@ -26,7 +26,7 @@ export const NETWORK_PATH = [
   { id: 'proxy-kbank', label: 'Proxy Server (KBank)' },
   { id: 'firewall-corp', label: 'Firewall Corporate' },
   { id: 'internet', label: 'Internet' },
-  { id: 'target', label: 'เว็บเป้าหมาย' },
+  { id: 'target', label: 'Target website' },
 ] as const;
 
 export const infraMetrics = z.object({

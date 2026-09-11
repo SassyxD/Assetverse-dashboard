@@ -26,10 +26,10 @@ const tierOf = (
 
   const wrap = <T>(v: T): Measurement<T> =>
     total === 0
-      ? unavailable('ยังไม่เคยเก็บข้อมูลเว็บนี้')
+      ? unavailable('Never collected data for this site')
       : trustworthy
         ? ok(v, total)
-        : insufficient(v, total, `คำนวณจาก ${total} แถว น้อยเกินจะสรุป`);
+        : insufficient(v, total, `Computed from ${total} rows — too few to conclude`);
 
   return {
     tier,
@@ -62,15 +62,15 @@ export const SEEDS: Seed[] = [
   })),
 ];
 
-const PROPERTY_TYPES = ['บ้าน', 'คอนโด', 'ทาวน์เฮาส์', 'พาณิชย์'];
-const SELL_STATES = ['ขายอยู่', 'ขายแล้ว'];
+const PROPERTY_TYPES = ['House', 'Condo', 'Townhouse', 'Commercial'];
+const SELL_STATES = ['For sale', 'Sold'];
 
 /** baania: 15 จังหวัด แต่ 3 จังหวัดมีไม่ถึง 10 แถว = ยังนับว่ามีข้อมูลไม่ได้ */
 const BAANIA_AREAS: [string, number][] = [
-  ['กรุงเทพมหานคร', 20_897], ['นนทบุรี', 10_837], ['สมุทรปราการ', 7_963],
-  ['ปทุมธานี', 6_335], ['ภูเก็ต', 3_485], ['ระยอง', 2_105], ['นครปฐม', 1_567],
-  ['สมุทรสาคร', 1_334], ['นครราชสีมา', 1_282], ['ขอนแก่น', 933],
-  ['อุดรธานี', 430], ['ลำพูน', 393], ['ชลบุรี', 5], ['เชียงใหม่', 4], ['นครนายก', 1],
+  ['Bangkok', 20_897], ['Nonthaburi', 10_837], ['Samut Prakan', 7_963],
+  ['Pathum Thani', 6_335], ['Phuket', 3_485], ['Rayong', 2_105], ['Nakhon Pathom', 1_567],
+  ['Samut Sakhon', 1_334], ['Nakhon Ratchasima', 1_282], ['Khon Kaen', 933],
+  ['Udon Thani', 430], ['Lamphun', 393], ['Chonburi', 5], ['Chiang Mai', 4], ['Nakhon Nayok', 1],
 ];
 
 export const buildSnapshot = (seed: Seed): SiteSnapshot => {
@@ -80,9 +80,9 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
   const none = records === 0;
 
   const m = <T>(v: T): Measurement<T> =>
-    none ? unavailable('ยังไม่เคยเก็บข้อมูลเว็บนี้')
+    none ? unavailable('Never collected data for this site')
     : trustworthy ? ok(v, records)
-    : insufficient(v, records, `คำนวณจาก ${records} แถว`);
+    : insufficient(v, records, `Computed from ${records} rows`);
 
   const areas = site === 'baania'
     ? BAANIA_AREAS.map(([area, n]) => ({
@@ -93,7 +93,7 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
   // baania มีข้อมูลแค่ บ้าน × ขายอยู่ = 1 ใน 8 ช่อง — ยอดรวม 57,571 ไม่บอกเรื่องนี้
   const cells = PROPERTY_TYPES.flatMap((propertyType) =>
     SELL_STATES.map((sellState) => {
-      const filled = site === 'baania' && propertyType === 'บ้าน' && sellState === 'ขายอยู่';
+      const filled = site === 'baania' && propertyType === 'House' && sellState === 'For sale';
       return {
         propertyType,
         sellState,
@@ -111,49 +111,49 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
     owner: ownerOf(status),
     trustworthy,
     queue: {
-      frontierDepth: none ? unavailable('ยังไม่เคย seed') : ok(frontier),
-      parsingDepth: none ? unavailable('ยังไม่เคย seed') : ok(0),
-      deadLetterDepth: none ? unavailable('ยังไม่เคย seed') : ok(dlq),
+      frontierDepth: none ? unavailable('Never seeded') : ok(frontier),
+      parsingDepth: none ? unavailable('Never seeded') : ok(0),
+      deadLetterDepth: none ? unavailable('Never seeded') : ok(dlq),
       deadLetterReasons: dlq > 0
-        ? [{ reason: 'HTTP 523 ต้นทางล่ม (Cloudflare ต่อ origin ไม่ได้)', count: dlq }]
+        ? [{ reason: 'HTTP 523 source down (Cloudflare cannot reach origin)', count: dlq }]
         : [],
-      inFlight: none ? unavailable('ยังไม่เคย seed') : ok(0),
-      avgWaitSeconds: unavailable('ยังไม่ stamp เวลาตอน enqueue'),
-      purged: none ? unavailable('ยังไม่เคย seed') : ok(0),
+      inFlight: none ? unavailable('Never seeded') : ok(0),
+      avgWaitSeconds: unavailable('Enqueue time is not stamped yet'),
+      purged: none ? unavailable('Never seeded') : ok(0),
       tq2qConfiguredMs: site === 'baania' ? 4000 : 2000,
-      tq2qObservedMs: unavailable('ยังไม่วัด'),
+      tq2qObservedMs: unavailable('Not measured yet'),
     },
     crawler: {
       crawlCompleteness: listed === null
-        ? unavailable('ยังไม่รู้ตัวหาร ต้องสำรวจ (--plan) ก่อน')
+        ? unavailable('Denominator unknown — needs a survey pass (--plan) first')
         : m(Number((records / listed).toFixed(4))),
-      savedRecords: none ? unavailable('ยังไม่เคยเก็บ') : ok(records),
+      savedRecords: none ? unavailable('Never collected') : ok(records),
       listedOnMarketplace: listed === null
-        ? unavailable('ยังไม่ได้สำรวจจำนวนประกาศทั้งหมด')
+        ? unavailable('Total listing count has not been surveyed')
         : ok(listed),
-      newUrlRatio: none ? unavailable('ยังไม่เคยเก็บ') : ok(1),
-      delistedUrls: unavailable('ยังไม่เก็บ snapshot ย้อนหลัง'),
-      retryRate: status === 'source_down' ? ok(1) : none ? unavailable('ยังไม่เคยเก็บ') : ok(0),
-      totalCrawlerSeconds: none ? unavailable('ยังไม่เคยเก็บ') : ok(site === 'baania' ? 8040 : 120),
-      throughputPagesPerMin: unavailable('ยังไม่วัด duration ต่อหน้า'),
+      newUrlRatio: none ? unavailable('Never collected') : ok(1),
+      delistedUrls: unavailable('No historical snapshots kept yet'),
+      retryRate: status === 'source_down' ? ok(1) : none ? unavailable('Never collected') : ok(0),
+      totalCrawlerSeconds: none ? unavailable('Never collected') : ok(site === 'baania' ? 8040 : 120),
+      throughputPagesPerMin: unavailable('Per-page duration is not measured yet'),
       statusCounts: status === 'source_down' ? [{ status: 523, count: 15 }] : [],
       pageKind: { listing: none ? 0 : site === 'baania' ? 100 : 2, detail: records },
     },
     extractor: {
-      primFieldsSuccessRate: none ? unavailable('ยังไม่เคยเก็บ') : ok(1, records),
+      primFieldsSuccessRate: none ? unavailable('Never collected') : ok(1, records),
       primFieldsNullRate: m(0),
       fallbackFieldsNullRate: m(0),
-      totalExtractorSeconds: none ? unavailable('ยังไม่เคยเก็บ') : ok(90),
-      extractedRecords: none ? unavailable('ยังไม่เคยเก็บ') : ok(records),
+      totalExtractorSeconds: none ? unavailable('Never collected') : ok(90),
+      extractedRecords: none ? unavailable('Never collected') : ok(records),
     },
     llmRecovery: {
-      invocations: unavailable('ยังไม่ได้ต่อ LLM Gateway'),
-      recoveryRate: unavailable('ยังไม่ได้ต่อ LLM Gateway'),
-      iterations: unavailable('ยังไม่ได้ต่อ LLM Gateway'),
+      invocations: unavailable('LLM Gateway is not wired up yet'),
+      recoveryRate: unavailable('LLM Gateway is not wired up yet'),
+      iterations: unavailable('LLM Gateway is not wired up yet'),
       ratePerIteration: [],
-      scriptsGenerated: unavailable('ยังไม่ได้ต่อ LLM Gateway'),
-      scriptsAccepted: unavailable('ยังไม่ได้ต่อ LLM Gateway'),
-      tokensUsed: unavailable('ยังไม่ได้ต่อ LLM Gateway'),
+      scriptsGenerated: unavailable('LLM Gateway is not wired up yet'),
+      scriptsAccepted: unavailable('LLM Gateway is not wired up yet'),
+      tokensUsed: unavailable('LLM Gateway is not wired up yet'),
     },
     tiers: (['primary', 'fallback1', 'fallback2'] as TierName[])
       .map((t) => tierOf(t, records, table, trustworthy)),
@@ -167,18 +167,18 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
       : [],
     rangeChecks: site === 'baania'
       ? [
-          { id: 'land-gt-10rai', field: 'land_area', label: 'เนื้อที่ดินเกิน 10 ไร่',
-            expectation: 'บ้าน/ทาวน์เฮาส์ในเมืองปกติ 30-200 ตร.ว.',
+          { id: 'land-gt-10rai', field: 'land_area', label: 'Land area over 10 rai',
+            expectation: 'Urban houses and townhouses are normally 30-200 sq wa',
             records: 50, severity: 'warn' },
           { id: 'land-dup-slots', field: 'land_area',
-            label: 'ต้นทางส่งเลขตัวเดียวยัดช่องไร่/งาน/วา ทั้งสามช่อง',
-            expectation: 'บอกหน่วยไม่ได้ ระบบปล่อยว่างแทนที่จะเดา (ถ้าคำนวณจะเพี้ยน 501 เท่า)',
+            label: 'Source packs one number into all three rai/ngan/wa slots',
+            expectation: 'Unit is unknowable, system leaves it empty instead of guessing (computing it is off by 501x)',
             records: 826, severity: 'info' },
           { id: 'coord-far', field: 'latitude,longitude',
-            label: 'พิกัดห่างจากกลางจังหวัดเกิน 150 กม.',
-            expectation: 'อาจสลับ lat/long หรือจังหวัดผิด', records: 14, severity: 'warn' },
+            label: 'Coordinates over 150 km from the province centre',
+            expectation: 'lat/long may be swapped, or the province is wrong', records: 14, severity: 'warn' },
           { id: 'coord-outside-th', field: 'latitude,longitude',
-            label: 'พิกัดนอกขอบเขตประเทศไทย',
+            label: 'Coordinates outside Thailand',
             expectation: 'lat 5.5-20.6 · lon 97.3-105.7', records: 0, severity: 'info' },
         ]
       : [],
@@ -190,27 +190,27 @@ export const buildSnapshot = (seed: Seed): SiteSnapshot => {
     },
     changeDetection: {
       owner: 'other_team',
-      pagesChecked: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
-      pagesChanged: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
-      recrawlsTriggered: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
+      pagesChecked: unavailable('The owning team has not sent data yet'),
+      pagesChanged: unavailable('The owning team has not sent data yet'),
+      recrawlsTriggered: unavailable('The owning team has not sent data yet'),
       changeKind: {
-        content: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
-        structure: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
+        content: unavailable('The owning team has not sent data yet'),
+        structure: unavailable('The owning team has not sent data yet'),
       },
     },
     pii: {
       owner: 'other_team',
-      scanned: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
-      found: unavailable('ทีมอื่นยังไม่ส่งข้อมูลมา'),
+      scanned: unavailable('The owning team has not sent data yet'),
+      found: unavailable('The owning team has not sent data yet'),
       kinds: [],
       action: 'unknown',
       stage: 'unknown',
     },
     captcha: {
       owner: 'other_team',
-      solveAttempts: unavailable('ยังไม่มีระบบ solve captcha'),
-      solveSuccessRate: unavailable('ยังไม่มีระบบ solve captcha'),
-      costUsd: unavailable('ยังไม่มีระบบ solve captcha'),
+      solveAttempts: unavailable('No captcha solving in place yet'),
+      solveSuccessRate: unavailable('No captcha solving in place yet'),
+      costUsd: unavailable('No captcha solving in place yet'),
     },
     runs: buildRuns(seed),
   };
@@ -224,13 +224,13 @@ const buildRuns = ({ site, status, records }: Seed) => {
         id: 'baania-2026-09-condo', site, cycle: CYCLE, phase: 'crawling' as const,
         status: 'source_down' as const, startedAt: '2026-09-02T20:00:45Z',
         finishedAt: null, pagesDone: 0, itemsSaved: 0, pagesSkipped: 3,
-        message: 'ไม่ต้องทำอะไร ต้นทางตอบ 523 (เซิร์ฟเวอร์ baania ล่ม) ระบบรอแล้วลองใหม่เอง',
+        message: 'Nothing to do — source returns 523 (baania server is down), the system waits and retries on its own',
       },
       {
         id: 'baania-2026-08-house', site, cycle: '2026-08', phase: 'done' as const,
         status: 'ok' as const, startedAt: '2026-08-31T12:56:00Z',
         finishedAt: '2026-08-31T15:10:00Z', pagesDone: 100, itemsSaved: records,
-        pagesSkipped: 3, message: 'ข้ามไป 3 หน้า (ต้นทางตอบ 5xx) ไม่กระทบยอดรวม',
+        pagesSkipped: 3, message: 'Skipped 3 pages (source returned 5xx) — totals are unaffected',
       },
     ];
   }
@@ -239,7 +239,7 @@ const buildRuns = ({ site, status, records }: Seed) => {
       id: `${site}-2026-09-sample`, site, cycle: CYCLE, phase: 'done' as const,
       status: 'ok' as const, startedAt: '2026-08-19T16:30:00Z',
       finishedAt: '2026-08-19T16:32:00Z', pagesDone: 2, itemsSaved: records,
-      pagesSkipped: 0, message: 'รอบทดสอบ ยังไม่ได้เก็บเต็ม',
+      pagesSkipped: 0, message: 'Test run — not a full collection',
     },
   ];
 };

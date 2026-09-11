@@ -34,7 +34,7 @@ app.get('/api/dashboard', async (c) => {
 app.get('/api/sites/:site', async (c) => {
   const site = c.req.param('site');
   const local = snapshots().find((s) => s.site === site);
-  if (!local) return c.json({ error: { message: `ไม่รู้จักเว็บ ${site}` } }, 404);
+  if (!local) return c.json({ error: { message: `Unknown site: ${site}` } }, 404);
   if (!useServices) return c.json(local);
 
   const [queue, crawler, extractor, kbmf, ranges, llm, integrations] = await Promise.all([
