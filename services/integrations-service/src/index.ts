@@ -10,7 +10,7 @@ app.get('/integrations/:site', (c) => {
   const f = bySite(c.req.param('site'));
   return f
     ? c.json({ changeDetection: f.changeDetection, pii: f.pii, captcha: f.captcha })
-    : c.json({ error: { message: 'ไม่รู้จักเว็บนี้' } }, 404);
+    : c.json({ error: { message: 'Unknown site' } }, 404);
 });
 
 listen();

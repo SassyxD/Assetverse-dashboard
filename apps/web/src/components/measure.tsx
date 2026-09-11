@@ -10,16 +10,23 @@ type Fmt = (m: Measurement<number>) => string;
 
 /**
  * ช่องแสดง metric 1 ตัว บังคับกฎเดียวกันทุกที่:
- *   unavailable  ลายทแยง + คำว่ายังไม่วัด ห้ามโชว์ 0
- *   insufficient ติดป้ายยันไม่ได้ เพราะกลุ่มตัวอย่างเล็กเกิน
+ *   unavailable  ลายทแยง + คำว่า Not measured ห้ามโชว์ 0
+ *   insufficient ติดป้าย Low confidence เพราะกลุ่มตัวอย่างเล็กเกิน
+ *
+ * อ่านจากบนลงล่าง: ช่องนี้คืออะไร → ชื่อตัวแปรที่อ้างถึงกันตอนคุยงาน → ค่า
+ * คนอ่านที่ไม่ได้เขียนโค้ดจึงไม่ต้องเดาความหมายจากชื่อตัวแปร
  */
 export const Field = ({
+  desc,
   name,
   m,
   format = showNum,
   hint,
   className,
 }: {
+  /** ช่องนี้วัดอะไร เขียนให้คนที่ไม่รู้จักชื่อตัวแปรอ่านรู้เรื่อง */
+  desc: string;
+  /** ชื่อตัวแปรตามที่ระบบใช้จริง */
   name: string;
   m: Measurement<number>;
   format?: Fmt | undefined;
@@ -37,10 +44,11 @@ export const Field = ({
         className,
       )}
     >
-      <div className="text-muted-foreground font-mono text-[10px] leading-snug tracking-tight">
+      <div className="text-[12px] leading-snug font-medium">{desc}</div>
+      <div className="text-muted-foreground mt-0.5 font-mono text-[10px] leading-snug tracking-tight">
         {name}
       </div>
-      <div className="mt-1.5 flex flex-wrap items-baseline gap-1.5">
+      <div className="mt-2 flex flex-wrap items-baseline gap-1.5">
         <span
           className={cn(
             'tnum text-lg leading-none font-semibold',
@@ -50,7 +58,7 @@ export const Field = ({
         >
           {format(m)}
         </span>
-        {weak ? <Badge variant="gap">ยันไม่ได้</Badge> : null}
+        {weak ? <Badge variant="gap">Low confidence</Badge> : null}
       </div>
       {m.note ? (
         <p className="text-muted-foreground mt-1.5 text-[11px] leading-snug">{m.note}</p>
@@ -61,7 +69,13 @@ export const Field = ({
   );
 };
 
-export const FieldGrid = ({ children, className }: { children: ReactNode; className?: string }) => (
+export const FieldGrid = ({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) => (
   <div className={cn('grid grid-cols-2 gap-2.5 lg:grid-cols-4', className)}>{children}</div>
 );
 
@@ -71,7 +85,7 @@ export const allMissing = (ms: Measurement<number>[]) =>
 
 export const NotWired = ({ ms }: { ms: Measurement<number>[] }) => (
   <div className="hatch text-muted-foreground rounded-md border border-dashed px-3 py-4 text-[12px]">
-    {ms.find((m) => m.note)?.note ?? 'ยังไม่ได้ต่อแหล่งข้อมูล'}
+    {ms.find((m) => m.note)?.note ?? 'No data source wired up yet'}
   </div>
 );
 
@@ -131,7 +145,7 @@ export const Breakdown = ({
             />
           </div>
           <div className="tnum text-right text-[12px] font-medium">
-            {r.display ?? r.value.toLocaleString('th-TH')}
+            {r.display ?? r.value.toLocaleString('en-US')}
           </div>
         </div>
       ))}
@@ -171,13 +185,13 @@ const STATUS: Record<
   SourceStatus,
   { label: string; variant: 'ok' | 'wait' | 'bad' | 'muted' | 'gap' }
 > = {
-  ok: { label: 'ปกติ', variant: 'ok' },
+  ok: { label: 'OK', variant: 'ok' },
   // ต้นทางล่มเองคือสถานะปกติที่ไม่ต้องทำอะไร ห้ามใช้แดง ไม่งั้นคนชินแล้วเลิกสนใจ
-  source_down: { label: 'รอต้นทาง', variant: 'wait' },
-  throttled: { label: 'ถูกบล็อก', variant: 'bad' },
-  network_path_down: { label: 'เส้นทางพัง', variant: 'bad' },
-  failed: { label: 'งานพัง', variant: 'bad' },
-  never_run: { label: 'ยังไม่รัน', variant: 'muted' },
+  source_down: { label: 'Source down', variant: 'wait' },
+  throttled: { label: 'Blocked', variant: 'bad' },
+  network_path_down: { label: 'Path down', variant: 'bad' },
+  failed: { label: 'Failed', variant: 'bad' },
+  never_run: { label: 'Never run', variant: 'muted' },
 };
 
 export const StatusBadge = ({ status }: { status: SourceStatus }) => (
@@ -185,10 +199,10 @@ export const StatusBadge = ({ status }: { status: SourceStatus }) => (
 );
 
 const OWNER: Record<Owner, string> = {
-  nobody_wait: 'รอต้นทาง',
-  us: 'ทีมเรา',
-  infra: 'ทีม infra',
-  unknown: 'ยังไม่รู้',
+  nobody_wait: 'Waiting on source',
+  us: 'Our team',
+  infra: 'Infra team',
+  unknown: 'Unknown',
 };
 
 export const ownerLabel = (o: Owner) => OWNER[o];

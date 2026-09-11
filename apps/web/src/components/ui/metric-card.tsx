@@ -14,6 +14,9 @@ export type TrendType = 'up' | 'down' | 'neutral';
 export interface DashboardMetricCardProps {
   /** ค่าที่ format แล้ว ถ้ายังไม่ได้วัดให้ส่ง missing มา อย่าส่ง 0 */
   value: string;
+  /** การ์ดนี้วัดอะไร อ่านก่อนชื่อตัวแปร */
+  desc: string;
+  /** ชื่อตัวแปรตามที่ระบบใช้จริง อยู่ใต้ desc */
   title: string;
   icon?: IconType | undefined;
   trendChange?: string | undefined;
@@ -34,6 +37,7 @@ const TREND_COLOR = {
 
 const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
   value,
+  desc,
   title,
   icon: IconComponent,
   trendChange,
@@ -51,12 +55,18 @@ const DashboardMetricCard: React.FC<DashboardMetricCardProps> = ({
       className={cn('rounded-lg', className)}
     >
       <Card className={cn('h-full transition-shadow hover:shadow-md', missing && 'hatch')}>
-        <CardHeader className="flex flex-row items-start justify-between space-y-0 p-4 pb-2">
-          <CardTitle className="text-muted-foreground font-mono text-[11px] leading-snug font-medium tracking-tight">
-            {title}
-          </CardTitle>
+        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 p-4 pb-2">
+          <div className="min-w-0">
+            <CardTitle className="text-[12px] leading-snug font-semibold">{desc}</CardTitle>
+            <p className="text-muted-foreground mt-0.5 font-mono text-[11px] leading-snug tracking-tight">
+              {title}
+            </p>
+          </div>
           {IconComponent ? (
-            <IconComponent className="text-muted-foreground h-4 w-4 shrink-0" aria-hidden="true" />
+            <IconComponent
+              className="text-muted-foreground h-4 w-4 shrink-0"
+              aria-hidden="true"
+            />
           ) : null}
         </CardHeader>
         <CardContent className="p-4 pt-0">
